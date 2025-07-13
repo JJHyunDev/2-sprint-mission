@@ -51,7 +51,6 @@ public class User extends BaseUpdatableEntity {
     }
     if (newPassword != null && !newPassword.equals(this.password)) {
       this.password = newPassword;
-
     }
     if (newProfile != null) {
       this.profile = newProfile;
