@@ -45,4 +45,4 @@ public interface AuthApi {
       )
   })
   ResponseEntity<UserDto> role(@Parameter(description = "권한 수정 요청 정보") RoleUpdateRequest request);
-}
+} 

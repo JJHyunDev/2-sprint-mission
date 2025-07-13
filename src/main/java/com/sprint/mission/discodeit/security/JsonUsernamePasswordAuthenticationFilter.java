@@ -36,6 +36,7 @@ public class JsonUsernamePasswordAuthenticationFilter extends UsernamePasswordAu
     }
 
     try {
+      // JSON 요청 본문 파싱
       LoginRequest loginRequest = objectMapper.readValue(request.getInputStream(),
           LoginRequest.class);
 
@@ -53,17 +54,17 @@ public class JsonUsernamePasswordAuthenticationFilter extends UsernamePasswordAu
   public static JsonUsernamePasswordAuthenticationFilter createDefault(
       ObjectMapper objectMapper,
       AuthenticationManager authenticationManager,
-      SessionAuthenticationStrategy sessionStrategy,
+      SessionAuthenticationStrategy sessionAuthenticationStrategy,
       RememberMeServices rememberMeServices
   ) {
     JsonUsernamePasswordAuthenticationFilter filter = new JsonUsernamePasswordAuthenticationFilter(
         objectMapper);
-    filter.setRequiresAuthenticationRequestMatcher(SecurityMatchers.LOG_IN);
+    filter.setRequiresAuthenticationRequestMatcher(SecurityMatchers.LOGIN);
     filter.setAuthenticationManager(authenticationManager);
     filter.setAuthenticationSuccessHandler(new CustomLoginSuccessHandler(objectMapper));
     filter.setAuthenticationFailureHandler(new CustomLoginFailureHandler(objectMapper));
     filter.setSecurityContextRepository(new HttpSessionSecurityContextRepository());
-    filter.setSessionAuthenticationStrategy(sessionStrategy);
+    filter.setSessionAuthenticationStrategy(sessionAuthenticationStrategy);
     filter.setRememberMeServices(rememberMeServices);
     return filter;
   }

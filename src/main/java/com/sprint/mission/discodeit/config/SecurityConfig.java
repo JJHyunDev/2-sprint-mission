@@ -9,7 +9,6 @@ import com.sprint.mission.discodeit.security.SessionRegistryLogoutHandler;
 import java.util.stream.IntStream;
 import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,11 +32,10 @@ import org.springframework.security.web.authentication.rememberme.PersistentToke
 
 @Slf4j
 @Configuration
-@EnableWebSecurity(debug = true)
+@EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
 
-  // 이미 있는 필터 or 커스텀 필터를 활성화
   @Bean
   public SecurityFilterChain filterChain(
       HttpSecurity http,
@@ -45,23 +43,22 @@ public class SecurityConfig {
       DaoAuthenticationProvider daoAuthenticationProvider,
       SessionRegistry sessionRegistry,
       PersistentTokenBasedRememberMeServices rememberMeServices
-  ) throws Exception {
+  )
+      throws Exception {
     http
         .authenticationProvider(daoAuthenticationProvider)
         .authorizeHttpRequests(authorize -> authorize
             .requestMatchers(
-                // CSRF 토큰 발급 API 및 회원가입 API는 인증 없이 접근 허용
-                SecurityMatchers.NON_API, // /api/** 제외한 모든 접근 허용
-                SecurityMatchers.GET_CSRF_TOKEN, // GET / /api/auth/csrf-token
-                SecurityMatchers.SIGN_UP, // POST / /api/users
-                SecurityMatchers.LOG_IN //
+                SecurityMatchers.NON_API,
+                SecurityMatchers.GET_CSRF_TOKEN,
+                SecurityMatchers.SIGN_UP
             ).permitAll()
             .anyRequest().hasRole(Role.USER.name())
         )
-        .csrf(csrf -> csrf.ignoringRequestMatchers(SecurityMatchers.LOG_OUT))
+        .csrf(csrf -> csrf.ignoringRequestMatchers(SecurityMatchers.LOGOUT))
         .logout(logout ->
             logout
-                .logoutRequestMatcher(SecurityMatchers.LOG_OUT)
+                .logoutRequestMatcher(SecurityMatchers.LOGOUT)
                 .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler())
                 .addLogoutHandler(new SessionRegistryLogoutHandler(sessionRegistry))
         )
@@ -75,13 +72,14 @@ public class SecurityConfig {
                 .sessionRegistry(sessionRegistry)
                 .expiredSessionStrategy(new CustomSessionInformationExpiredStrategy(objectMapper))
         )
-        .rememberMe(rememberMe -> rememberMe.rememberMeServices(rememberMeServices));
+        .rememberMe(rememberMe -> rememberMe.rememberMeServices(rememberMeServices))
+    ;
 
     return http.build();
   }
 
   @Bean
-  public String debugFilterChain(@Qualifier("filterChain") SecurityFilterChain chain) {
+  public String debugFilterChain(SecurityFilterChain chain) {
     log.debug("Debug Filter Chain...");
     int filterSize = chain.getFilters().size();
     IntStream.range(0, filterSize)
@@ -93,7 +91,6 @@ public class SecurityConfig {
 
   @Bean
   public PasswordEncoder passwordEncoder() {
-    // 회원 가입 시 비밀번호를 해시로 저장하기 위해 BCryptPasswordEncoder 사용
     return new BCryptPasswordEncoder();
   }
 
@@ -105,7 +102,7 @@ public class SecurityConfig {
   ) {
     DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
     provider.setUserDetailsService(userDetailsService);
-    provider.setPasswordEncoder(passwordEncoder); // BCryptPasswordEncoder 를 통해 비밀번호 해시 설정
+    provider.setPasswordEncoder(passwordEncoder);
     provider.setAuthoritiesMapper(new RoleHierarchyAuthoritiesMapper(roleHierarchy));
     return provider;
   }
@@ -115,8 +112,10 @@ public class SecurityConfig {
     return RoleHierarchyImpl.withDefaultRolePrefix()
         .role(Role.ADMIN.name())
         .implies(Role.USER.name(), Role.CHANNEL_MANAGER.name())
+
         .role(Role.CHANNEL_MANAGER.name())
         .implies(Role.USER.name())
+
         .build();
   }
 
@@ -135,8 +134,8 @@ public class SecurityConfig {
     JdbcTokenRepositoryImpl tokenRepository = new JdbcTokenRepositoryImpl();
     tokenRepository.setDataSource(dataSource);
 
-    PersistentTokenBasedRememberMeServices rememberMeServices =
-        new PersistentTokenBasedRememberMeServices(key, userDetailsService, tokenRepository);
+    PersistentTokenBasedRememberMeServices rememberMeServices = new PersistentTokenBasedRememberMeServices(
+        key, userDetailsService, tokenRepository);
     rememberMeServices.setTokenValiditySeconds(tokenValiditySeconds);
 
     return rememberMeServices;

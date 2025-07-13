@@ -28,6 +28,7 @@ public class CustomSessionInformationExpiredStrategy implements SessionInformati
         status
     );
     errorResponse.getDetails().put("sessionId", event.getSessionInformation().getSessionId());
+    
     response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
   }
 }

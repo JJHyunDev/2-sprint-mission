@@ -1,5 +1,6 @@
 package com.sprint.mission.discodeit.controller;
 
+import com.sprint.mission.discodeit.controller.api.AuthApi;
 import com.sprint.mission.discodeit.dto.data.UserDto;
 import com.sprint.mission.discodeit.dto.request.RoleUpdateRequest;
 import com.sprint.mission.discodeit.security.DiscodeitUserDetails;
@@ -21,30 +22,35 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RequiredArgsConstructor
 @RestController
-@RequestMapping
-public class AuthController {
+@RequestMapping("/api/auth")
+public class AuthController implements AuthApi {
 
   private final AuthService authService;
   private final UserService userService;
 
-  @GetMapping("/api/auth/csrf-token")
-  public ResponseEntity<CsrfToken> getCsrfToken(CsrfToken token) {
-    return ResponseEntity.status(HttpStatus.OK).body(token);
+  @GetMapping("csrf-token")
+  public ResponseEntity<CsrfToken> getCsrfToken(CsrfToken csrfToken) {
+    log.debug("CSRF 토큰 요청");
+    return ResponseEntity.status(HttpStatus.OK).body(csrfToken);
   }
 
-  @GetMapping("/api/auth/me")
+  @GetMapping("me")
   public ResponseEntity<UserDto> me(@AuthenticationPrincipal DiscodeitUserDetails userDetails) {
     log.info("내 정보 조회 요청");
     UUID userId = userDetails.getUserDto().id();
     UserDto userDto = userService.find(userId);
-    return ResponseEntity.status(HttpStatus.OK).body(userDto);
+    return ResponseEntity
+        .status(HttpStatus.OK)
+        .body(userDto);
   }
 
-  @PutMapping("/api/auth/role")
+  @PutMapping("role")
   public ResponseEntity<UserDto> role(@RequestBody RoleUpdateRequest request) {
     log.info("권한 수정 요청");
     UserDto userDto = authService.updateRole(request);
-    return ResponseEntity.status(HttpStatus.OK).body(userDto);
-  }
 
+    return ResponseEntity
+        .status(HttpStatus.OK)
+        .body(userDto);
+  }
 }
